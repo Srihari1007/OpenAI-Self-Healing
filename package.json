@@ -1,0 +1,25 @@
+{
+  "name": "playwright-pom-framework",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright end-to-end automation framework using the Page Object Model",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:smoke": "playwright test --grep @smoke",
+    "demo:pipeline": "playwright test tests/pipeline-demo.spec.ts --project=chromium --headed --workers=1",
+    "demo:self-heal": "node scripts/self-heal-demo.mjs",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.3.0",
+    "eslint": "^9.35.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.42.0"
+  }
+}
