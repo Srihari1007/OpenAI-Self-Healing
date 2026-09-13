@@ -1,61 +1,59 @@
 # AI Resolution Report
 
-## TC05 - Synchronization Issue
+## Initial run
+
+Detected 4 failures: TC05, TC06, TC08, TC10.
+
+**Analysis source:** deterministic offline fallback (set OPENAI_API_KEY for live AI analysis)
+
+## TC05 - synchronization: dashboard is ready before assertion
 
 **Failure Type:** Synchronization Issue
 
-**Root Cause:** The demo delays the Products heading for 2.5 seconds, but the initial automation waits only 1.5 seconds.
+**Root Cause:** The Products heading appears after the initial 1.5 second assertion window.
 
-**Recommended Fix:** Use Playwright's normal condition-based web assertion timeout.
+**Recommended Resolution:** Use Playwright's condition-based assertion with the configured timeout.
 
-**Exact file and method:** `src/pages/inventory.page.ts`, `expectDashboardTooEarly()`.
+**Recovery Guardrail:** SAFE AUTOMATION FIX
 
-```diff
-- await expect(this.title).toBeVisible({ timeout: 1500 });
-+ await expect(this.title).toBeVisible();
-```
+**Rerun:** Only TC05 will be selected in the recovery phase.
 
-**Action:** Activate the allow-listed synchronization remediation and rerun TC05.
+## TC06 - locator drift: username control is discoverable
 
-## TC06 - Locator Change
+**Failure Type:** Locator Drift
 
-**Failure Type:** Automation Framework Issue
+**Root Cause:** The obsolete missing-username test id is not present in the DOM.
 
-**Root Cause:** The application locator changed and the old test id no longer exists.
+**Recommended Resolution:** Use the existing semantic Username placeholder locator owned by LoginPage.
 
-**Exact file and method:** `src/pages/login.page.ts`, `fillBrokenUsernameLocator()`.
+**Recovery Guardrail:** SAFE AUTOMATION FIX
 
-```diff
-- await this.page.getByTestId('missing-username').fill(username, { timeout: 1500 });
-+ await this.usernameInput.fill(username);
-```
+**Rerun:** Only TC06 will be selected in the recovery phase.
 
-**Action:** Activate the allow-listed stable locator and rerun TC06.
+## TC08 - infrastructure: payment service is available
 
-## TC08 - Transient Infrastructure Failure
+**Failure Type:** Transient Infrastructure Failure
 
-**Failure Type:** Infrastructure Failure
+**Root Cause:** The simulated payment dependency returned HTTP 503.
 
-**Root Cause:** Payment service returned HTTP 503 Service Unavailable.
+**Recommended Resolution:** Rerun after service recovery without changing the HTTP 200 assertion.
 
-**Exact file and line:** `tests/pipeline-demo.spec.ts`, TC08 payment response assertion.
+**Recovery Guardrail:** CONTROLLED RETRY
 
-**Code change:** No page-object or test-code change. Keep the assertion unchanged and retry the request through the pipeline recovery policy.
+**Rerun:** Only TC08 will be selected in the recovery phase.
 
-**Action:** Retry the affected test after the simulated service recovery and escalate if it remains unavailable.
-
-## TC10 - Genuine Application Defect
+## TC10 - coupon discount is reflected in total
 
 **Failure Type:** Application Defect
 
-**Root Cause:** The coupon was accepted but the checkout total was not reduced from 100 to 80.
+**Root Cause:** The simulated checkout response kept the total at 100 instead of applying SAVE20.
 
-**Exact file and assertion:** `tests/pipeline-demo.spec.ts`, TC10 coupon total assertion.
+**Recommended Resolution:** Require the application total to return 80; never change the expected assertion to 100.
 
-**Code change:** No automation code change. Keep `expectedTotal = 80` and investigate the application pricing calculation that returned `100`.
+**Recovery Guardrail:** APPLICATION FIX REQUIRED
 
-**Action:** Require the simulated application fix, then rerun TC10 without weakening the expected value.
+**Rerun:** Only TC10 will be selected in the recovery phase.
 
-## Release decision
+## Recovery decision
 
-**INITIAL RUN FAILED:** Three failures have operational or automation recovery paths. TC10 requires an application fix before its rerun can pass.
+The runner activates only allow-listed demo remediations. Assertions remain unchanged. TC10 passes only after the simulated application response is corrected from 100 to 80.
