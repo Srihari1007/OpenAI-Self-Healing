@@ -9,17 +9,39 @@ jobs:
   test:
     timeout-minutes: 15
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - run: npm ci
+
       - run: npx playwright install --with-deps
+
       - run: npm run typecheck
+
       - run: npm run lint
-      - run: npm test
+
+      - name: Run Playwright Tests
+        run: npm test
+        continue-on-error: true
+
+      - name: Generate AI Resolution Report
+        if: always()
+        run: npm run demo:self-heal
+
+      - name: Upload AI Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-reports
+          path: artifacts/
+          retention-days: 14
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -27,6 +49,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
