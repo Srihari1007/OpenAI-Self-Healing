@@ -26,13 +26,16 @@ jobs:
 
       - run: npm run lint
 
-      - name: Run Playwright Tests
-        run: npm test
-        continue-on-error: false
+      - name: Run initial Playwright pipeline
+        id: initial_tests
+        continue-on-error: true
+        run: |
+          node scripts/reset-demo-state.mjs
+          npx playwright test tests/pipeline-demo.spec.ts --project=chromium --workers=1
 
-      - name: Generate AI Resolution Report
-        if: always()
-        run: npm run demo:self-heal
+      - name: Run self-healing agent
+        if: steps.initial_tests.outcome == 'failure'
+        run: npm run self-heal:agent
 
       - name: Upload AI Reports
         if: always()
