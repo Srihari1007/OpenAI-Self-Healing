@@ -35,7 +35,7 @@ export class InventoryPage {
   }
 
   async expectDashboardTooEarly(): Promise<void> {
-    await expect(this.title).toBeVisible();
+    await expect(this.title).toBeVisible({ timeout: 1500 });
   }
 
   async expectCartItemCount(count: number): Promise<void> {

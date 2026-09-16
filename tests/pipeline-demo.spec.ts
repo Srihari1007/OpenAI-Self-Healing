@@ -243,7 +243,7 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
     });
     const paymentControl = isHealingRun
       ? page.locator('[data-test="payment-service"]')
-      : page.locator('[data-test="payment-service"]');
+      : page.getByTestId('missing-payment-service');
     await expect(paymentControl, 'Payment control should be discoverable').toBeVisible();
   });
 
