@@ -1,0 +1,130 @@
+Self-Healing Automation Demo Guide
+
+Project Title:
+OpenAI Self-Healing Playwright Automation
+
+1. Objective
+The objective of this project is to demonstrate how a test automation pipeline can automatically detect failures, classify them, generate AI-based reports, and recover from known automation issues without manual intervention. It also highlights the difference between automation defects and true application defects.
+
+2. Problem Statement
+Modern CI pipelines often fail because of:
+- flaky test timing
+- outdated selectors
+- broken locator references
+- real application bugs
+
+In such cases, the team needs a system that can quickly identify the type of failure and take the right action.
+
+3. Solution Overview
+This project uses Playwright with a Page Object Model (POM) to structure tests and maintain page logic in reusable classes.
+
+The self-healing layer includes:
+- failure detection from Playwright results
+- AI-based classification of root causes
+- artifact generation for traceability
+- rerun of only affected tests
+- safe remediation for automation problems
+- escalation for genuine product defects
+
+4. Architecture
+Core components:
+- tests/pipeline-demo.spec.ts
+  Contains the business-level test scenarios and pipeline demonstration cases.
+
+- src/pages/login.page.ts
+  Stores login selectors and reusable login actions.
+
+- src/pages/inventory.page.ts
+  Stores product-page locators and inventory actions.
+
+- agents/self-heal-agent.ts
+  Runs the healing workflow and applies approved fixes.
+
+- scripts/self-heal-demo.mjs
+  Executes the end-to-end demonstration flow.
+
+- artifacts/
+  Stores generated reports:
+  - ai-resolution.md
+  - defect-report.md
+  - healing-summary.md
+
+5. How the Demo Works
+Step 1: Run the initial pipeline
+Command:
+npm run demo:pipeline
+
+This executes the Playwright suite and intentionally fails on selected cases.
+
+Step 2: Detect failures
+The framework identifies failed tests such as:
+- TC05: Synchronization issue
+- TC06: Locator drift
+- TC08: Payment control locator issue
+- TC10: Application defect (coupon logic issue)
+
+Step 3: Generate AI reports
+The system creates the following:
+- AI Resolution Report
+- Defect Report
+- Healing Summary
+
+These files explain what failed, why it failed, and what needs to happen next.
+
+Step 4: Trigger self-healing
+Command:
+npm run demo:self-heal
+
+This step:
+- reads the failed tests
+- classifies them
+- reruns only the affected ones
+- applies approved fixes for automation issues
+- keeps application bugs visible for engineering action
+
+6. What the Agent Can Fix vs What It Cannot
+The self-healing automation can fix issues such as:
+- stale locators
+- timing issues
+- missing selectors
+- short timeout assumptions
+
+It cannot silently hide real product defects. For example:
+- incorrect discount logic resulting in a total of 100 instead of 80
+
+In such a case, the system records it as a defect and escalates it to developers instead of weakening the test assertion.
+
+7. Example of a Recoverable Automation Bug
+A locator drift issue may occur when a selector changes from an old test id to a new stable selector.
+
+The automation can:
+- detect the mismatch
+- recommend the new locator
+- rerun the relevant test
+
+8. Example of a Real Application Bug
+A coupon bug may produce an incorrect total even though the workflow appears to be executing correctly.
+
+This is not a test automation defect. It is an application defect that should be opened as a bug for the development team.
+
+9. Why This Matters
+This project illustrates a practical AI-assisted QA approach:
+- not every failure is the same
+- not every failure should be fixed by changing the assertion
+- recoverable automation issues can be healed automatically
+- real product defects must still be escalated to developers
+
+10. Final Summary
+This project demonstrates how an AI-driven self-healing framework can improve test resilience in CI/CD pipelines by:
+- identifying failures quickly
+- classifying the root cause
+- creating traceable reports
+- recovering automation issues automatically
+- protecting quality standards by escalating genuine app defects
+
+This is a strong hackathon-ready story because it combines:
+- Playwright automation
+- Page Object Model structure
+- AI-assisted triage
+- GitHub Actions artifact generation
+- self-healing pipeline behavior

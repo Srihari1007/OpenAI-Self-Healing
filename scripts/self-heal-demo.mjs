@@ -30,15 +30,15 @@ const remediationCatalog = {
     safety: 'SAFE AUTOMATION FIX',
   },
   TC08: {
-    type: 'Transient Infrastructure Failure',
-    rootCause: 'The simulated payment dependency returned HTTP 503.',
-    fix: 'Rerun after service recovery without changing the HTTP 200 assertion.',
-    safety: 'CONTROLLED RETRY',
+    type: 'Locator Drift',
+    rootCause: 'The payment control exists with test id payment-service, but the initial automation uses obsolete test id missing-payment-service.',
+    fix: 'Use the existing [data-test="payment-service"] selector and rerun TC08.',
+    safety: 'SAFE AUTOMATION FIX',
   },
   TC10: {
-    type: 'Application Defect',
-    rootCause: 'The simulated checkout response kept the total at 100 instead of applying SAVE20.',
-    fix: 'Require the application total to return 80; never change the expected assertion to 100.',
+    type: 'Application Server Error',
+    rootCause: 'The application server returned checkout total 100 instead of applying the SAVE20 discount and returning 80.',
+    fix: 'Raise a developer bug and require the server response to return 80; never change the expected assertion to 100.',
     safety: 'APPLICATION FIX REQUIRED',
   },
 };
@@ -170,7 +170,7 @@ ${sections.join('\n\n')}
 
 ## Recovery decision
 
-The runner activates only allow-listed demo remediations. Assertions remain unchanged. TC10 passes only after the simulated application response is corrected from 100 to 80.
+The runner activates only allow-listed demo remediations. Assertions remain unchanged. TC10 requires a developer bug and an application server correction from 100 to 80.
 `;
 }
 

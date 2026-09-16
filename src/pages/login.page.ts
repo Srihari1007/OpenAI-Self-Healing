@@ -30,7 +30,7 @@ export class LoginPage {
   }
 
   async fillBrokenUsernameLocator(username: string): Promise<void> {
-    await this.page.getByTestId('missing-username').fill(username, { timeout: 1500 });
+    await this.usernameInput.fill(username);
   }
 
   async expectLoginError(message: string): Promise<void> {

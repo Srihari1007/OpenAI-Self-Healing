@@ -29,7 +29,7 @@ npm run lint          # Run ESLint
 npm run report        # Open the last HTML report
 npm run demo:pipeline # Open Chromium and run all 10 POM test cases
 npm run demo:self-heal # Detect failures, show AI resolution, and rerun failed tests
-```
+npm run self-heal:agent # Apply approved remediations and rerun affected tests
 
 ## Ten-test hackathon pipeline demo
 
@@ -41,17 +41,21 @@ npm run demo:pipeline
 
 This opens Chromium and runs ten POM test cases sequentially. Six pass and four fail intentionally. Failed tests automatically create screenshots in `screenshots/` using their test IDs.
 
+Before every `npm run demo:pipeline` run, the npm pre-script restores the intentional TC05, TC06, and TC08 failure baseline. This keeps the presentation repeatable even after `npm run self-heal:agent` has applied its approved repairs.
+
 | Tests | Result | Reason |
 | --- | --- | --- |
 | TC01-TC04 | Pass | Login, products, cart, and invalid-login behavior |
 | TC05 | Fail | Synchronization/order issue |
 | TC06 | Fail | Locator drift |
 | TC07 | Pass | Missing test data recovered through approved setup |
-| TC08 | Fail | Payment service HTTP 503 |
+| TC08 | Fail | Payment control locator drift |
 | TC09 | Pass | Checkout navigation |
 | TC10 | Fail | Genuine coupon application defect |
 
-The reports are saved to `artifacts/defect-report.md` and `artifacts/ai-resolution.md`. Show the browser first, then open the defect report and screenshots. Explain that TC05 and TC06 are self-healing candidates, TC07 demonstrates recovered test-data setup, TC08 can be handled through controlled retry, and TC10 must be escalated because the application is producing the wrong business result. The initial state is **6 passed and 4 failed**.
+The reports are saved to `artifacts/defect-report.md` and `artifacts/ai-resolution.md`. Show the browser first, then open the defect report and screenshots. Explain that TC05, TC06, and TC08 are self-healing candidates, TC07 demonstrates recovered test-data setup, and TC10 must be escalated because the application server is producing the wrong business result. The initial state is **6 passed and 4 failed**.
+
+After the pipeline run, execute `npm run self-heal:agent`. It repairs and reruns TC05, TC06, and TC08, reruns TC10 without weakening its assertion, and reports **3 recovered with 1 application defect still open**.
 
 ## Self-healing hackathon demo
 

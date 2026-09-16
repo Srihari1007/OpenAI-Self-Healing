@@ -9,8 +9,11 @@
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "test:smoke": "playwright test --grep @smoke",
+    "predemo:pipeline": "node scripts/reset-demo-state.mjs",
     "demo:pipeline": "playwright test tests/pipeline-demo.spec.ts --project=chromium --headed --workers=1",
+    "predemo:self-heal": "node scripts/reset-demo-state.mjs",
     "demo:self-heal": "node scripts/self-heal-demo.mjs",
+    "self-heal:agent": "node --experimental-strip-types agents/self-heal-agent.ts",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts"

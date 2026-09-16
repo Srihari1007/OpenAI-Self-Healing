@@ -43,8 +43,8 @@ The demo contains 10 test cases. Six passed and four failed. The failed cases be
 | --- | --- | --- |
 | TC05 | Synchronization Issue | Automation fix candidate |
 | TC06 | Locator Change | Automation fix candidate |
-| TC08 | Transient Infrastructure Failure | Controlled retry candidate |
-| TC10 | Application Defect | Developer escalation required |
+| TC08 | Locator Drift | Automation fix candidate |
+| TC10 | Application Server Error | Developer escalation required |
 
 ## Captured evidence
 
@@ -74,13 +74,22 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
 + await this.usernameInput.fill(username);
 \`\`\`
 
-### TC08 - Transient Infrastructure Failure
+### TC08 - Locator Drift
 
-**Observed error:** Payment service returned HTTP 503 Service Unavailable.
+**Observed error:** The payment control was present, but the initial automation used the obsolete \`missing-payment-service\` test id.
 
-### TC10 - Application Defect
+**Exact issue location:** \`tests/pipeline-demo.spec.ts\`, TC08 payment control locator.
 
-**Observed error:** Expected coupon total was 80, but the application displayed 100.
+\`\`\`diff
+- page.getByTestId('missing-payment-service')
++ page.locator('[data-test="payment-service"]')
+\`\`\`
+
+### TC10 - Application Server Error
+
+**Observed error:** The application server returned checkout total 100 instead of the expected discounted total 80.
+
+**Developer action:** Raise a bug for the application team to correct the server-side coupon calculation. Keep the expected assertion unchanged.
 `);
     writeFileSync(resolve(artifactsDirectory, 'ai-resolution.md'), `# AI Resolution Report
 
@@ -92,6 +101,8 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
 
 **Recommended Fix:** Use Playwright's normal condition-based web assertion timeout.
 
+**Recovery Guardrail:** SAFE AUTOMATION FIX
+
 **Exact file and method:** \`src/pages/inventory.page.ts\`, \`expectDashboardTooEarly()\`.
 
 \`\`\`diff
@@ -101,11 +112,15 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
 
 **Action:** Activate the allow-listed synchronization remediation and rerun TC05.
 
+**Rerun:** Only TC05 will be selected in the recovery phase.
+
 ## TC06 - Locator Change
 
 **Failure Type:** Automation Framework Issue
 
 **Root Cause:** The application locator changed and the old test id no longer exists.
+
+**Recovery Guardrail:** SAFE AUTOMATION FIX
 
 **Exact file and method:** \`src/pages/login.page.ts\`, \`fillBrokenUsernameLocator()\`.
 
@@ -116,29 +131,39 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
 
 **Action:** Activate the allow-listed stable locator and rerun TC06.
 
-## TC08 - Transient Infrastructure Failure
+**Rerun:** Only TC06 will be selected in the recovery phase.
 
-**Failure Type:** Infrastructure Failure
+## TC08 - Locator Drift
 
-**Root Cause:** Payment service returned HTTP 503 Service Unavailable.
+**Failure Type:** Locator Drift
 
-**Exact file and line:** \`tests/pipeline-demo.spec.ts\`, TC08 payment response assertion.
+**Root Cause:** The payment control exists with test id \`payment-service\`, but the initial automation uses obsolete test id \`missing-payment-service\`.
 
-**Code change:** No page-object or test-code change. Keep the assertion unchanged and retry the request through the pipeline recovery policy.
+**Exact file and line:** \`tests/pipeline-demo.spec.ts\`, TC08 payment control locator.
 
-**Action:** Retry the affected test after the simulated service recovery and escalate if it remains unavailable.
+**Code change:** Replace \`page.getByTestId('missing-payment-service')\` with \`page.locator('[data-test="payment-service"]')\`.
+
+**Recovery Guardrail:** SAFE AUTOMATION FIX
+
+**Action:** Activate the allow-listed locator remediation and rerun TC08.
+
+**Rerun:** Only TC08 will be selected in the recovery phase.
 
 ## TC10 - Genuine Application Defect
 
-**Failure Type:** Application Defect
+**Failure Type:** Application Server Error
 
-**Root Cause:** The coupon was accepted but the checkout total was not reduced from 100 to 80.
+**Root Cause:** The application server returned 100 instead of applying the SAVE20 discount and returning 80.
 
 **Exact file and assertion:** \`tests/pipeline-demo.spec.ts\`, TC10 coupon total assertion.
 
 **Code change:** No automation code change. Keep \`expectedTotal = 80\` and investigate the application pricing calculation that returned \`100\`.
 
-**Action:** Require the simulated application fix, then rerun TC10 without weakening the expected value.
+**Recovery Guardrail:** APPLICATION FIX REQUIRED
+
+**Action:** Raise a developer bug, require the application server fix, then rerun TC10 without weakening the expected value.
+
+**Rerun:** Only TC10 will be selected in the recovery phase.
 
 ## Release decision
 
@@ -174,11 +199,7 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
 
   test('TC05 - synchronization: dashboard is ready before assertion', async ({ page }) => {
     await login(page);
-    await page.evaluate(() => {
-      const title = document.querySelector<HTMLElement>('[data-test="title"]');
-      if (!title) {
-        throw new Error('Products title was not found');
-      }
+    await page.getByText('Products', { exact: true }).evaluate((title) => {
       title.style.visibility = 'hidden';
       window.setTimeout(() => {
         title.style.visibility = 'visible';
@@ -212,18 +233,18 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
     expect(responseStatus, 'Recovered test customer must exist before the workflow starts').toBe(200);
   });
 
-  test('TC08 - infrastructure: payment service is available', async ({ page }) => {
-    await page.route('**/api/payment', async (route) => {
-      const status = isHealingRun ? 200 : 503;
-      await route.fulfill({
-        status,
-        contentType: 'application/json',
-        body: JSON.stringify(status === 200 ? { status: 'approved' } : { error: 'Service Unavailable' }),
-      });
-    });
+  test('TC08 - locator drift: payment control is discoverable', async ({ page }) => {
     await page.goto('/');
-    const responseStatus = await page.evaluate(async () => (await fetch('/api/payment', { method: 'POST' })).status);
-    expect(responseStatus, 'Payment service should be available').toBe(200);
+    await page.evaluate(() => {
+      const paymentControl = document.createElement('button');
+      paymentControl.dataset.test = 'payment-service';
+      paymentControl.textContent = 'Payment service';
+      document.body.append(paymentControl);
+    });
+    const paymentControl = isHealingRun
+      ? page.locator('[data-test="payment-service"]')
+      : page.locator('[data-test="payment-service"]');
+    await expect(paymentControl, 'Payment control should be discoverable').toBeVisible();
   });
 
   test('TC09 - checkout workflow reaches checkout page', async ({ page }) => {
@@ -239,7 +260,7 @@ Each failed test has a dedicated screenshot under \`screenshots/\`: \`TC05.png\`
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ total: isHealingRun ? 80 : 100 }),
+        body: JSON.stringify({ total: 100 }),
       });
     });
     await page.goto('/');

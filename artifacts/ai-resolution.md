@@ -1,59 +1,77 @@
 # AI Resolution Report
 
-## Initial run
-
-Detected 4 failures: TC05, TC06, TC08, TC10.
-
-**Analysis source:** deterministic offline fallback (set OPENAI_API_KEY for live AI analysis)
-
-## TC05 - synchronization: dashboard is ready before assertion
+## TC05 - Synchronization Issue
 
 **Failure Type:** Synchronization Issue
 
-**Root Cause:** The Products heading appears after the initial 1.5 second assertion window.
+**Root Cause:** The demo delays the Products heading for 2.5 seconds, but the initial automation waits only 1.5 seconds.
 
-**Recommended Resolution:** Use Playwright's condition-based assertion with the configured timeout.
+**Recommended Fix:** Use Playwright's normal condition-based web assertion timeout.
 
 **Recovery Guardrail:** SAFE AUTOMATION FIX
+
+**Exact file and method:** `src/pages/inventory.page.ts`, `expectDashboardTooEarly()`.
+
+```diff
+- await expect(this.title).toBeVisible({ timeout: 1500 });
++ await expect(this.title).toBeVisible();
+```
+
+**Action:** Activate the allow-listed synchronization remediation and rerun TC05.
 
 **Rerun:** Only TC05 will be selected in the recovery phase.
 
-## TC06 - locator drift: username control is discoverable
+## TC06 - Locator Change
 
-**Failure Type:** Locator Drift
+**Failure Type:** Automation Framework Issue
 
-**Root Cause:** The obsolete missing-username test id is not present in the DOM.
-
-**Recommended Resolution:** Use the existing semantic Username placeholder locator owned by LoginPage.
+**Root Cause:** The application locator changed and the old test id no longer exists.
 
 **Recovery Guardrail:** SAFE AUTOMATION FIX
 
+**Exact file and method:** `src/pages/login.page.ts`, `fillBrokenUsernameLocator()`.
+
+```diff
+- await this.page.getByTestId('missing-username').fill(username, { timeout: 1500 });
++ await this.usernameInput.fill(username);
+```
+
+**Action:** Activate the allow-listed stable locator and rerun TC06.
+
 **Rerun:** Only TC06 will be selected in the recovery phase.
 
-## TC08 - infrastructure: payment service is available
+## TC08 - Locator Drift
 
-**Failure Type:** Transient Infrastructure Failure
+**Failure Type:** Locator Drift
 
-**Root Cause:** The simulated payment dependency returned HTTP 503.
+**Root Cause:** The payment control exists with test id `payment-service`, but the initial automation uses obsolete test id `missing-payment-service`.
 
-**Recommended Resolution:** Rerun after service recovery without changing the HTTP 200 assertion.
+**Exact file and line:** `tests/pipeline-demo.spec.ts`, TC08 payment control locator.
 
-**Recovery Guardrail:** CONTROLLED RETRY
+**Code change:** Replace `page.getByTestId('missing-payment-service')` with `page.locator('[data-test="payment-service"]')`.
+
+**Recovery Guardrail:** SAFE AUTOMATION FIX
+
+**Action:** Activate the allow-listed locator remediation and rerun TC08.
 
 **Rerun:** Only TC08 will be selected in the recovery phase.
 
-## TC10 - coupon discount is reflected in total
+## TC10 - Genuine Application Defect
 
-**Failure Type:** Application Defect
+**Failure Type:** Application Server Error
 
-**Root Cause:** The simulated checkout response kept the total at 100 instead of applying SAVE20.
+**Root Cause:** The application server returned 100 instead of applying the SAVE20 discount and returning 80.
 
-**Recommended Resolution:** Require the application total to return 80; never change the expected assertion to 100.
+**Exact file and assertion:** `tests/pipeline-demo.spec.ts`, TC10 coupon total assertion.
+
+**Code change:** No automation code change. Keep `expectedTotal = 80` and investigate the application pricing calculation that returned `100`.
 
 **Recovery Guardrail:** APPLICATION FIX REQUIRED
 
+**Action:** Raise a developer bug, require the application server fix, then rerun TC10 without weakening the expected value.
+
 **Rerun:** Only TC10 will be selected in the recovery phase.
 
-## Recovery decision
+## Release decision
 
-The runner activates only allow-listed demo remediations. Assertions remain unchanged. TC10 passes only after the simulated application response is corrected from 100 to 80.
+**INITIAL RUN FAILED:** Three failures have operational or automation recovery paths. TC10 requires an application fix before its rerun can pass.
