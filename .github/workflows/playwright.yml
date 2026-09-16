@@ -28,21 +28,18 @@ jobs:
 
       - name: Run initial Playwright pipeline
         id: initial_tests
-        continue-on-error: true
-        run: |
-          node scripts/reset-demo-state.mjs
-          npx playwright test tests/pipeline-demo.spec.ts --project=chromium --workers=1
+        run: npx playwright test tests/pipeline-demo.spec.ts --project=chromium --workers=1
 
-      - name: Run self-healing agent
-        if: steps.initial_tests.outcome == 'failure'
-        run: npm run self-heal:agent
-
-      - name: Upload AI Reports
-        if: always()
+      - name: Upload self-healing input for manual review
+        if: always() && steps.initial_tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: ai-reports
-          path: artifacts/
+          name: self-healing-input
+          path: |
+            artifacts/ai-resolution.md
+            artifacts/defect-report.md
+            screenshots/
+          if-no-files-found: error
           retention-days: 14
 
       - name: Upload Playwright report

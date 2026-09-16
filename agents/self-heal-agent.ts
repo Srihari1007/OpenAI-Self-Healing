@@ -246,6 +246,28 @@ async function writeSummary(
   );
 }
 
+async function printManualReview(changes: FileChange[]): Promise<void> {
+  const changedFiles = [...new Set(
+    changes
+      .filter((change) => change.status === 'AUTO_HEALED')
+      .map((change) => change.filePath),
+  )];
+
+  console.log('\n=== Manual review required ===');
+  if (changedFiles.length === 0) {
+    console.log('No new source changes were applied. Review the healing summary for already-active or rejected remediations.');
+  } else {
+    const result = await execFileAsync('git', ['diff', '--', ...changedFiles], {
+      cwd: projectRoot,
+      maxBuffer: 20 * 1024 * 1024,
+    });
+    console.log(`Changed files: ${changedFiles.join(', ')}`);
+    console.log(result.stdout.trim());
+  }
+  console.log(`Review in VS Code Source Control and in ${summaryPath}.`);
+  console.log('No files were staged, committed, pushed, or merged.');
+}
+
 export async function runSelfHealingAgent(): Promise<number> {
   await mkdir(artifactsDirectory, { recursive: true });
   const resolutionMarkdown = await readFile(resolutionPath, 'utf8');
@@ -268,6 +290,7 @@ export async function runSelfHealingAgent(): Promise<number> {
   const rerun = await rerunTests(rerunResolutions.map((resolution) => resolution.id));
   await writeSummary(resolutions, changes, rerun);
   console.log(`Healing summary written to ${summaryPath}`);
+  await printManualReview(changes);
   return rerun.status;
 }
 
