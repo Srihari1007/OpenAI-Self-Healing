@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Playwright Tests
         run: npm test
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Generate AI Resolution Report
         if: always()
